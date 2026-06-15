@@ -22,12 +22,35 @@ npm install
 ```
 
 ### b) Base de données + stockage (Supabase, recommandé)
+
+> ✅ **Avec Supabase, tu n'as RIEN à installer** — ni PostgreSQL, ni Docker. Le projet
+> Supabase est obligatoire de toute façon (le CDC l'impose pour les fichiers) et il fournit
+> **aussi** une base PostgreSQL. Tu n'as qu'à copier une *connection string*.
+> Le CDC demande « PostgreSQL via Prisma » **sans imposer d'hébergeur** : réutiliser le
+> Postgres de Supabase est donc 100 % conforme.
+
 1. Crée un compte sur https://supabase.com puis un **nouveau projet**.
 2. **Base** : `Project Settings → Database → Connection string (URI)` → copie-la dans
-   `DATABASE_URL`. *(Alternative : installer PostgreSQL en local et créer une base `bridge`.)*
+   `DATABASE_URL`.
 3. **Stockage** : `Storage → New bucket` → nomme le bucket **`documents`**.
 4. **Clés** : `Project Settings → API` → copie `Project URL` dans `SUPABASE_URL` et la clé
    **`service_role`** dans `SUPABASE_SERVICE_ROLE_KEY`.
+
+#### Tu préfères une base PostgreSQL 100 % locale ? (optionnel)
+Tu auras quand même besoin du projet Supabase pour le **stockage** (étapes 3–4), mais tu
+peux faire tourner Postgres en local pour `DATABASE_URL` :
+
+- **Avec Docker** (recommandé si tu connais Docker — rien à installer côté Postgres) :
+  ```bash
+  docker run --name bridge-db -e POSTGRES_PASSWORD=postgres \
+    -e POSTGRES_DB=bridge -p 5432:5432 -d postgres:16
+  ```
+  puis `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/bridge?schema=public"`.
+- **Sans Docker** : installe PostgreSQL (https://www.postgresql.org/download/), crée une
+  base `bridge`, et adapte `DATABASE_URL` en conséquence.
+
+> En résumé : **Supabase = zéro installation**. Docker/Postgres local ne sont que des
+> alternatives si tu veux une base de dev hors-ligne.
 
 ### c) Secret d'authentification
 ```bash
