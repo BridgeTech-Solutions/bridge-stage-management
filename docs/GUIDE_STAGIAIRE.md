@@ -29,9 +29,15 @@ npm install
 > Le CDC demande « PostgreSQL via Prisma » **sans imposer d'hébergeur** : réutiliser le
 > Postgres de Supabase est donc 100 % conforme.
 
-1. Crée un compte sur https://supabase.com puis un **nouveau projet**.
-2. **Base** : `Project Settings → Database → Connection string (URI)` → copie-la dans
-   `DATABASE_URL`.
+1. Crée un compte sur https://supabase.com puis un **nouveau projet** (note bien le
+   **mot de passe de la base** que tu choisis — il sert dans les URLs).
+2. **Base (2 URLs)** : clique le bouton **`Connect`** (en haut du dashboard). Prisma a
+   besoin de **deux** connection strings :
+   - **`DATABASE_URL`** = mode **Transaction** (port **6543**), ajoute `?pgbouncer=true` →
+     utilisée par l'application.
+   - **`DIRECT_URL`** = mode **Session** (port **5432**) → utilisée par les migrations.
+   > ⚠️ Si tu ne mets qu'une seule URL (le pooler 6543), `npm run db:migrate` échouera :
+   > les migrations ont besoin de la connexion directe (5432).
 3. **Stockage** : `Storage → New bucket` → nomme le bucket **`documents`**.
 4. **Clés** : `Project Settings → API` → copie `Project URL` dans `SUPABASE_URL` et la clé
    **`service_role`** dans `SUPABASE_SERVICE_ROLE_KEY`.
