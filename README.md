@@ -27,6 +27,8 @@ npm install
 # 2. Configurer l'environnement
 cp .env.example .env
 #   puis renseigner DATABASE_URL, AUTH_SECRET, SUPABASE_*
+#   Pas encore de base ni de Supabase ? → suis la « section 0 » du GUIDE_STAGIAIRE
+#   (Supabase = zéro installation, ni PostgreSQL ni Docker à installer).
 
 # 3. Créer le schéma en base
 npm run db:migrate
@@ -63,6 +65,7 @@ src/
 │  ├─ demandes-admin/  Slice 3 — à réaliser
 │  └─ notifications/   Slice 4 — à réaliser
 ├─ shared/          code partagé (db, auth, storage, ui, constantes, validation)
+├─ types/           déclarations TypeScript globales (augmentation NextAuth)
 └─ app/             routes Next.js qui assemblent les features
 ```
 
