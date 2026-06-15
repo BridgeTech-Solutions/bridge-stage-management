@@ -4,7 +4,7 @@ Bienvenue 👋 Ce guide explique **comment le projet est organisé** et **commen
 travailler** dessus. Lis-le en entier avant d'écrire ta première ligne de code.
 
 - **Quoi construire ?** → le document MVP (`MVP - Gestion des demandes de stage`).
-- **Comment démarrer le projet ?** → le [`README.md`](./README.md).
+- **Comment démarrer le projet ?** → le [`README.md`](../README.md).
 - **Comment travailler ?** → ce guide.
 
 ---
@@ -47,13 +47,15 @@ src/
 │  ├─ demandes-admin/       Slice 3 — à réaliser
 │  └─ notifications/        Slice 4 — à réaliser
 │
-└─ shared/                  Code PARTAGÉ entre plusieurs slices (voir §5)
-   ├─ db/prisma.ts          Client Prisma (accès base)
-   ├─ auth/auth.ts          Configuration NextAuth (connexion RH)
-   ├─ storage/supabase.ts   Upload des fichiers vers Supabase
-   ├─ constants/domain.ts   Règles métier (tailles, statuts, docs requis…)
-   ├─ validation/file.ts    Validation des fichiers PDF
-   └─ ui/                   Composants réutilisables (ex. StatusBadge)
+├─ shared/                  Code PARTAGÉ entre plusieurs slices (voir §5)
+│  ├─ db/prisma.ts          Client Prisma (accès base)
+│  ├─ auth/auth.ts          Configuration NextAuth (connexion RH)
+│  ├─ storage/supabase.ts   Upload des fichiers vers Supabase
+│  ├─ constants/domain.ts   Règles métier (tailles, statuts, docs requis…)
+│  ├─ validation/file.ts    Validation des fichiers PDF
+│  └─ ui/                   Composants réutilisables (ex. StatusBadge)
+│
+└─ types/                   Déclarations TypeScript globales (augmentation NextAuth)
 
 prisma/
 ├─ schema.prisma           Modèle de données (tables + relations)
@@ -63,6 +65,9 @@ prisma/
 > **Règle d'or :** si du code ne sert qu'à UNE fonctionnalité → il va dans sa slice.
 > S'il sert à PLUSIEURS → il va dans `shared/`. En cas de doute, commence dans la slice ;
 > tu déplaceras vers `shared/` le jour où une 2ᵉ slice en a besoin.
+>
+> ⚠️ **Évite la « fat slice » :** une slice qui grossit trop et couvre plusieurs
+> fonctionnalités. Si ça arrive, découpe-la en slices plus petites à but unique.
 
 ---
 
@@ -121,8 +126,11 @@ Exemple : tu commences la **Slice 1 (candidature)**.
 
 ## 6. Conventions de code (à respecter)
 
-- **Langue :** l'**interface** (textes affichés) est en **français** ; le **code**
-  (variables, fonctions, fichiers) est en **anglais**.
+- **Langue :** l'**interface** (textes affichés) est en **français** ; les **identifiants
+  techniques** (variables, fonctions, types) sont en **anglais**. Les **noms du domaine
+  métier** — donc les dossiers de slices (`candidature`, `suivi`…) et les valeurs métier —
+  restent en **français** pour coller au cahier des charges (langage commun de l'équipe).
+  L'essentiel est de **rester cohérent** dans tout le projet.
 - **Composants serveur par défaut.** N'ajoute `"use client"` que si le composant a
   besoin d'interactivité (état, événements, hooks React).
 - **Toujours valider côté serveur** dans tes actions, même si le client a déjà validé.
