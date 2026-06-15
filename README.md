@@ -4,7 +4,7 @@ Plateforme de gestion des demandes de stage (front-office candidat + back-office
 Projet **Bridge Technologies Solutions**.
 
 > 👉 **Tu débutes sur le projet ? Lis d'abord [`GUIDE_STAGIAIRE.md`](./docs/GUIDE_STAGIAIRE.md).**
-> Le périmètre fonctionnel est décrit dans le document MVP. Maquettes visuelles : [`MAQUETTES.md`](./docs/MAQUETTES.md).
+> Périmètre fonctionnel : [document MVP](./docs/MVP-Bridge.pdf). Maquettes visuelles : [`MAQUETTES.md`](./docs/MAQUETTES.md).
 
 ## Stack
 

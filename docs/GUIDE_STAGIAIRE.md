@@ -3,9 +3,47 @@
 Bienvenue 👋 Ce guide explique **comment le projet est organisé** et **comment tu dois
 travailler** dessus. Lis-le en entier avant d'écrire ta première ligne de code.
 
-- **Quoi construire ?** → le document MVP (`MVP - Gestion des demandes de stage`).
-- **Comment démarrer le projet ?** → le [`README.md`](../README.md).
+- **Quoi construire ?** → le [document MVP](./MVP-Bridge.pdf) (périmètre et spécifications).
+- **Comment démarrer le projet ?** → le [`README.md`](../README.md) (commandes) + la section 0 ci-dessous.
 - **Comment travailler ?** → ce guide.
+
+---
+
+## 0. Mettre en place ton environnement
+
+Avant de coder, il te faut : le projet récupéré, une base **PostgreSQL**, un projet
+**Supabase** (qui fournit Postgres *et* le stockage), et tes variables d'environnement.
+
+### a) Récupérer le projet
+```bash
+git clone https://github.com/BridgeTech-Solutions/bridge-stage-management.git
+cd bridge-stage-management
+npm install
+```
+
+### b) Base de données + stockage (Supabase, recommandé)
+1. Crée un compte sur https://supabase.com puis un **nouveau projet**.
+2. **Base** : `Project Settings → Database → Connection string (URI)` → copie-la dans
+   `DATABASE_URL`. *(Alternative : installer PostgreSQL en local et créer une base `bridge`.)*
+3. **Stockage** : `Storage → New bucket` → nomme le bucket **`documents`**.
+4. **Clés** : `Project Settings → API` → copie `Project URL` dans `SUPABASE_URL` et la clé
+   **`service_role`** dans `SUPABASE_SERVICE_ROLE_KEY`.
+
+### c) Secret d'authentification
+```bash
+npx auth secret      # génère et propose une valeur pour AUTH_SECRET
+```
+
+### d) Renseigner `.env` et initialiser la base
+```bash
+cp .env.example .env          # puis colle tes valeurs (DATABASE_URL, SUPABASE_*, AUTH_SECRET)
+npm run db:migrate            # crée les tables en base
+npm run db:seed               # crée le compte RH de test (rh@bridge.test / password123)
+npm run dev                   # http://localhost:3000
+```
+
+> Bloqué sur cette étape ? Demande de l'aide tout de suite — c'est le point de friction
+> classique du démarrage, ce n'est pas grave.
 
 ---
 
@@ -107,6 +145,10 @@ Exemple : tu commences la **Slice 1 (candidature)**.
    constantes métier, client Prisma…
 5. **Coche la checklist** du README de la slice avant de demander une revue.
 
+> 🗄️ **Modèle de données :** la source de vérité est `prisma/schema.prisma`. Étudie-le
+> avant de coder une slice. Si tu **ajoutes ou modifies un modèle**, lance ensuite
+> `npm run db:migrate` pour mettre la base à jour.
+
 ---
 
 ## 5. La couche `shared/` — ce qui est déjà prêt pour toi
@@ -158,7 +200,8 @@ Exemple : tu commences la **Slice 1 (candidature)**.
 
 ## 8. Méthode de travail Git
 
-1. Pars toujours d'une branche : `git checkout -b slice/candidature`.
+1. Pars toujours d'une branche au format `feature/<nom>` (convention du dépôt) :
+   `git checkout -b feature/candidature`.
 2. Commits **petits et fréquents**, message clair :
    `feat(candidature): étape 1 du formulaire`.
 3. Quand une slice est finie et que sa **checklist est cochée**, ouvre une *Pull Request*
@@ -185,6 +228,9 @@ Préfixes de commit conseillés : `feat:` (nouveauté), `fix:` (correction),
 ---
 
 ## 10. Checklist avant de demander une revue
+
+> Pour le MVP, **pas de tests automatisés requis** : la validation se fait manuellement
+> via cette checklist (et celle de la slice).
 
 - [ ] La checklist du README de la slice est cochée.
 - [ ] `npm run build` passe sans erreur.
