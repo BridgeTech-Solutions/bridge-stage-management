@@ -1,0 +1,69 @@
+# Bridge — Gestion des demandes de stage
+
+Plateforme de gestion des demandes de stage (front-office candidat + back-office RH).
+Projet **Bridge Technologies Solutions**.
+
+> 👉 **Tu débutes sur le projet ? Lis d'abord [`GUIDE_STAGIAIRE.md`](./GUIDE_STAGIAIRE.md).**
+> Le périmètre fonctionnel est décrit dans le document MVP. Maquettes visuelles : [`MAQUETTES.md`](./MAQUETTES.md).
+
+## Stack
+
+| Brique | Techno |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Langage | TypeScript |
+| Style | Tailwind CSS v4 + DaisyUI 5 (thème `bridge`) |
+| Base de données | PostgreSQL via Prisma 6 |
+| Stockage fichiers | Supabase Storage |
+| Auth | NextAuth (Auth.js v5), Credentials + rôles |
+| Validation | Zod |
+
+## Démarrage
+
+```bash
+# 1. Installer les dépendances
+npm install
+
+# 2. Configurer l'environnement
+cp .env.example .env
+#   puis renseigner DATABASE_URL, AUTH_SECRET, SUPABASE_*
+
+# 3. Créer le schéma en base
+npm run db:migrate
+
+# 4. Créer un compte RH de test (rh@bridge.test / password123)
+npm run db:seed
+
+# 5. Lancer le serveur de dev
+npm run dev
+```
+
+App sur http://localhost:3000 · Slice exemple sur http://localhost:3000/exemple
+
+## Scripts
+
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | Serveur de développement |
+| `npm run build` | Build de production |
+| `npm run lint` | ESLint |
+| `npm run db:migrate` | Crée/applique une migration Prisma |
+| `npm run db:generate` | Régénère le client Prisma |
+| `npm run db:studio` | Explorateur de base de données |
+| `npm run db:seed` | Insère le compte RH de test |
+
+## Structure (vertical slice)
+
+```
+src/
+├─ features/        une fonctionnalité = un dossier complet (UI + logique + données)
+│  ├─ _example-note/   slice de démo à copier puis supprimer
+│  ├─ candidature/     Slice 1 — à réaliser
+│  ├─ suivi/           Slice 2 — à réaliser
+│  ├─ demandes-admin/  Slice 3 — à réaliser
+│  └─ notifications/   Slice 4 — à réaliser
+├─ shared/          code partagé (db, auth, storage, ui, constantes, validation)
+└─ app/             routes Next.js qui assemblent les features
+```
+
+Détails et conventions : voir [`GUIDE_STAGIAIRE.md`](./GUIDE_STAGIAIRE.md).

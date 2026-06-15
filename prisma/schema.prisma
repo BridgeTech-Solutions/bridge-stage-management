@@ -1,0 +1,98 @@
+// Schéma Prisma — Bridge, gestion des demandes de stage
+// Base de données : PostgreSQL (cf. cahier des charges).
+// Le stockage des FICHIERS se fait sur Supabase Storage ; seules les URLs
+// des fichiers sont enregistrées ici (modèle Document.url).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Énumérations -------------------------------------------------------
+
+enum Role {
+  ADMIN
+  RH
+  // TUTOR -> Phase 2
+}
+
+enum InternshipType {
+  ACADEMIC
+  PROFESSIONAL
+}
+
+enum RequestStatus {
+  PENDING // En attente
+  PROCESS // Traitement en cours
+  ACCEPTED // Acceptée
+  REJECTED // Rejetée
+}
+
+// --- Modèles ------------------------------------------------------------
+
+/// Utilisateur du back-office (équipe RH / Admin).
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // toujours stocké HASHÉ (bcrypt)
+  name      String?
+  role      Role     @default(RH)
+  createdAt DateTime @default(now())
+}
+
+/// Demande de stage déposée par un candidat.
+model InternshipRequest {
+  id             String         @id @default(cuid())
+  /// Code de suivi NON devinable communiqué au candidat (token aléatoire).
+  trackingCode   String         @unique
+  type           InternshipType
+  status         RequestStatus  @default(PENDING)
+  duration       String // ex. "1 mois", "3 mois"
+  startDate      DateTime // date de début souhaitée
+  reportRequired Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Relations
+  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String     @unique
+  documents  Document[]
+}
+
+/// Informations personnelles du candidat liées à une demande.
+model Profile {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String
+  school    String
+  field     String // filière
+  level     String // niveau d'étude
+
+  request InternshipRequest?
+}
+
+/// Fichier (PDF) joint à une demande. Le binaire vit sur Supabase Storage ;
+/// `url` pointe vers le fichier, `label` indique sa nature (CV, lettre, ...).
+model Document {
+  id        String   @id @default(cuid())
+  label     String
+  url       String
+  createdAt DateTime @default(now())
+
+  request   InternshipRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId String
+}
+
+/// DEMO — modèle de la slice exemple (features/_example-note).
+/// À SUPPRIMER une fois que le pattern vertical slice est compris.
+model ExampleNote {
+  id        String   @id @default(cuid())
+  message   String
+  createdAt DateTime @default(now())
+}

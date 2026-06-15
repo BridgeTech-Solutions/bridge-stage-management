@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* ------------------------------------------------------------------
+   Thème "bridge" — charte graphique Bridge Technologies Solutions
+   Palette : #0088C1 (principal), #014B6A, #78C2E1, #D6F2FE
+   Typographie : Montserrat (chargée dans layout.tsx)
+   ------------------------------------------------------------------ */
+@plugin "daisyui/theme" {
+  name: "bridge";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #ffffff;
+  --color-base-200: #f4fafd;
+  --color-base-300: #d6f2fe;
+  --color-base-content: #14242c;
+
+  --color-primary: #0088c1;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #014b6a;
+  --color-secondary-content: #ffffff;
+
+  --color-accent: #78c2e1;
+  --color-accent-content: #014b6a;
+
+  --color-neutral: #014b6a;
+  --color-neutral-content: #ffffff;
+
+  --color-info: #0088c1;
+  --color-info-content: #ffffff;
+  --color-success: #16a34a;
+  --color-success-content: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-content: #ffffff;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-montserrat);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+}
