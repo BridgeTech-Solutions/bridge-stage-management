@@ -166,7 +166,64 @@ Exemple : tu commences la **Slice 1 (candidature)**.
 
 ---
 
-## 6. Conventions de code (à respecter)
+## 6. Travailler avec la base de données (Prisma)
+
+La base est **PostgreSQL** (hébergée sur Supabase). On ne l'interroge **jamais en SQL
+brut** : on passe par **Prisma**, qui génère un client *typé* à partir du schéma.
+
+### Le cycle Prisma (à comprendre une fois pour toutes)
+1. Tu décris tes tables dans `prisma/schema.prisma` (les blocs `model`).
+2. `npm run db:migrate` applique ces changements à la base **et** régénère le client.
+3. Tu interroges la base via `import { prisma } from "@/shared/db/prisma"`.
+
+### Le modèle existant (déjà prêt — à étudier avant de coder)
+`prisma/schema.prisma` contient déjà les tables du projet :
+- `User` — comptes du back-office (RH / Admin)
+- `Profile` — infos personnelles du candidat
+- `InternshipRequest` — la demande (type, statut, code de suivi, dates…)
+- `Document` — fichier PDF lié à une demande
+
+> 📌 **Rappel CDC :** les **données** vivent dans PostgreSQL ; les **fichiers** vivent dans
+> Supabase Storage. En base, on ne stocke que **l'URL** du document, jamais le binaire.
+
+### Lire des données → dans `queries.ts`
+```ts
+import { prisma } from "@/shared/db/prisma";
+
+export function getRequest(trackingCode: string) {
+  return prisma.internshipRequest.findUnique({
+    where: { trackingCode },
+    include: { profile: true, documents: true }, // récupère aussi les relations
+  });
+}
+```
+
+### Écrire des données → dans `actions.ts` (côté serveur)
+```ts
+await prisma.internshipRequest.create({
+  data: {
+    type, duration, startDate, trackingCode,
+    profile: { create: { firstName, lastName, email, phone, school, field, level } },
+  },
+});
+```
+
+### Ajouter ou modifier une table
+1. Édite `prisma/schema.prisma` (ajoute/modifie un `model` ou un champ).
+2. Lance `npm run db:migrate` et donne un **nom** à la migration (ex. `add_evaluation`).
+3. Le client typé est régénéré : l'autocomplétion connaît immédiatement ton nouveau champ.
+
+### Voir / éditer les données
+```bash
+npm run db:studio   # Prisma Studio : explore la base dans le navigateur
+```
+
+> Détail complet des champs et relations : voir le [document MVP](./MVP-Bridge.pdf)
+> (section « Modèle de données ») et `prisma/schema.prisma`.
+
+---
+
+## 7. Conventions de code (à respecter)
 
 - **Langue :** l'**interface** (textes affichés) est en **français** ; les **identifiants
   techniques** (variables, fonctions, types) sont en **anglais**. Les **noms du domaine
@@ -184,7 +241,7 @@ Exemple : tu commences la **Slice 1 (candidature)**.
 
 ---
 
-## 7. Règles métier à ne JAMAIS oublier
+## 8. Règles métier à ne JAMAIS oublier
 
 - 📄 **Documents : PDF uniquement, 2 Mo maximum.** Vérifie côté client ET serveur
   (`validatePdf`).
@@ -198,7 +255,7 @@ Exemple : tu commences la **Slice 1 (candidature)**.
 
 ---
 
-## 8. Méthode de travail Git
+## 9. Méthode de travail Git
 
 1. Pars toujours d'une branche au format `feature/<nom>` (convention du dépôt) :
    `git checkout -b feature/candidature`.
@@ -213,7 +270,7 @@ Préfixes de commit conseillés : `feat:` (nouveauté), `fix:` (correction),
 
 ---
 
-## 9. Ordre de travail conseillé
+## 10. Ordre de travail conseillé
 
 1. **Setup** : faire tourner le projet en local (README) — base migrée, `npm run dev` OK.
 2. **Étudier** la slice `_example-note` jusqu'à la comprendre entièrement.
@@ -227,7 +284,7 @@ Préfixes de commit conseillés : `feat:` (nouveauté), `fix:` (correction),
 
 ---
 
-## 10. Checklist avant de demander une revue
+## 11. Checklist avant de demander une revue
 
 > Pour le MVP, **pas de tests automatisés requis** : la validation se fait manuellement
 > via cette checklist (et celle de la slice).
@@ -241,7 +298,7 @@ Préfixes de commit conseillés : `feat:` (nouveauté), `fix:` (correction),
 
 ---
 
-## 11. Ressources
+## 12. Ressources
 
 - Next.js (App Router) : https://nextjs.org/docs/app
 - Prisma : https://www.prisma.io/docs
