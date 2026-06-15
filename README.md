@@ -3,8 +3,8 @@
 Plateforme de gestion des demandes de stage (front-office candidat + back-office RH).
 Projet **Bridge Technologies Solutions**.
 
-> 👉 **Tu débutes sur le projet ? Lis d'abord [`GUIDE_STAGIAIRE.md`](./GUIDE_STAGIAIRE.md).**
-> Le périmètre fonctionnel est décrit dans le document MVP. Maquettes visuelles : [`MAQUETTES.md`](./MAQUETTES.md).
+> 👉 **Tu débutes sur le projet ? Lis d'abord [`GUIDE_STAGIAIRE.md`](./docs/GUIDE_STAGIAIRE.md).**
+> Le périmètre fonctionnel est décrit dans le document MVP. Maquettes visuelles : [`MAQUETTES.md`](./docs/MAQUETTES.md).
 
 ## Stack
 
@@ -66,4 +66,4 @@ src/
 └─ app/             routes Next.js qui assemblent les features
 ```
 
-Détails et conventions : voir [`GUIDE_STAGIAIRE.md`](./GUIDE_STAGIAIRE.md).
+Détails et conventions : voir [`GUIDE_STAGIAIRE.md`](./docs/GUIDE_STAGIAIRE.md).
