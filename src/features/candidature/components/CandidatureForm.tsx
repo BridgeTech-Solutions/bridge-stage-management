@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState, useRef } from "react";
+import type { InternshipType } from "@prisma/client";
 import { submitCandidature, type ActionState } from "../actions";
 import { step1InfosSchema, step2ParcoursSchema } from "../schema";
 import type { Step1InfosInput, Step2ParcoursInput } from "../schema";
@@ -38,16 +39,20 @@ export function CandidatureForm() {
 
   // Gestion du changement de champ (étape 1)
   const handleStep1Change = (field: keyof Step1InfosInput, value: string) => {
-    setStep1Data((prev) => ({ ...prev, [field]: value }));
-    // Valider le champ en temps réel
-    const fieldSchema = step1InfosSchema.pick({ [field]: true });
-    const result = fieldSchema.safeParse({ [field]: value });
-    if (result.success) {
-      setStep1Errors((prev) => {
-        const newErrors = { ...prev };
+    const newData = { ...step1Data, [field]: value };
+    setStep1Data(newData);
+    
+    // Seulement afficher l'erreur pour ce champ spécifique
+    if (step1Errors[field]) {
+      // Valider juste ce champ pour nettoyer le message d'erreur si c'est bon
+      const testData = { ...step1Data, [field]: value };
+      const result = step1InfosSchema.safeParse(testData);
+      if (result.success || !result.error.issues.some(issue => issue.path[0] === field)) {
+        // Nettoyer l'erreur pour ce champ
+        const newErrors = { ...step1Errors };
         delete newErrors[field];
-        return newErrors;
-      });
+        setStep1Errors(newErrors);
+      }
     }
   };
 
@@ -56,31 +61,38 @@ export function CandidatureForm() {
     field: keyof Step2ParcoursInput,
     value: string | boolean
   ) => {
-    setStep2Data((prev) => ({ ...prev, [field]: value }));
-    // Valider le champ en temps réel
-    const fieldSchema = step2ParcoursSchema.pick({ [field]: true });
-    const result = fieldSchema.safeParse({ [field]: value });
-    if (result.success) {
-      setStep2Errors((prev) => {
-        const newErrors = { ...prev };
+    const newData = { ...step2Data, [field]: value };
+    setStep2Data(newData);
+    
+    // Seulement afficher l'erreur pour ce champ spécifique
+    if (step2Errors[field]) {
+      // Valider juste ce champ pour nettoyer le message d'erreur si c'est bon
+      const testData = { ...step2Data, [field]: value };
+      const result = step2ParcoursSchema.safeParse(testData);
+      if (result.success || !result.error.issues.some(issue => issue.path[0] === field)) {
+        // Nettoyer l'erreur pour ce champ
+        const newErrors = { ...step2Errors };
         delete newErrors[field];
-        return newErrors;
-      });
+        setStep2Errors(newErrors);
+      }
     }
   };
 
   // Validation complète de l'étape 1
   const validateStep1 = (): boolean => {
     const result = step1InfosSchema.safeParse(step1Data);
+    console.log("🔍 Validation Step1:", { step1Data, result });
     if (!result.success) {
       const errors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
         errors[issue.path[0] as string] = issue.message;
       });
       setStep1Errors(errors);
+      console.log("❌ Step1 errors:", errors);
       return false;
     }
     setStep1Errors({});
+    console.log("✅ Step1 valid!");
     return true;
   };
 
@@ -101,7 +113,7 @@ export function CandidatureForm() {
 
   // Validation de l'étape 3 (documents)
   const validateStep3 = (): boolean => {
-    const internshipType = step2Data.internshipType as "ACADEMIC" | "PROFESSIONAL" | undefined;
+    const internshipType = step2Data.internshipType as InternshipType | undefined;
     if (!internshipType) {
       return false;
     }
@@ -270,7 +282,7 @@ export function CandidatureForm() {
         {/* Étape 3 */}
         {currentStep === 3 && (
           <StepDocuments
-            internshipType={step2Data.internshipType as any}
+            internshipType={step2Data.internshipType as InternshipType | undefined}
             onFilesChange={setUploadedFiles}
             uploadedFiles={uploadedFiles}
           />

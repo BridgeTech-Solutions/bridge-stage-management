@@ -111,7 +111,7 @@ export function StepInfos({ data, onChange, errors = {} }: StepInfosProps) {
       <div className="form-control">
         <label className="label">
           <span className="label-text font-semibold">
-            Téléphone 2 (optionnel)
+            Téléphone 2 <span className="text-error">*</span>
           </span>
         </label>
         <input
@@ -120,6 +120,7 @@ export function StepInfos({ data, onChange, errors = {} }: StepInfosProps) {
           className={`input input-bordered ${errors.phone2 ? "input-error" : ""}`}
           value={data.phone2 || ""}
           onChange={(e) => onChange("phone2", e.target.value)}
+          required
         />
         {errors.phone2 && (
           <label className="label">
@@ -142,7 +143,7 @@ export function StepInfos({ data, onChange, errors = {} }: StepInfosProps) {
             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           ></path>
         </svg>
-        <span>Au moins 2 numéros de téléphone doivent être valides.</span>
+        <span>Les 2 numéros de téléphone sont obligatoires et doivent être valides.</span>
       </div>
     </div>
   );

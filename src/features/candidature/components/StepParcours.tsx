@@ -1,6 +1,7 @@
 "use client";
 
 import type { Step2ParcoursInput } from "../schema";
+import type { InternshipType } from "@prisma/client";
 import { TYPE_LABELS, MIN_DURATION_MONTHS } from "@/shared/constants/domain";
 
 interface StepParcoursProps {
@@ -10,7 +11,7 @@ interface StepParcoursProps {
 }
 
 export function StepParcours({ data, onChange, errors = {} }: StepParcoursProps) {
-  const internshipType = data.internshipType as "ACADEMIC" | "PROFESSIONAL" | undefined;
+  const internshipType = data.internshipType as InternshipType | undefined;
   const minDuration = internshipType ? MIN_DURATION_MONTHS[internshipType] : 1;
 
   return (
@@ -111,7 +112,7 @@ export function StepParcours({ data, onChange, errors = {} }: StepParcoursProps)
                 onChange={(e) => onChange("internshipType", e.target.value)}
                 required
               />
-              <span className="label-text">{TYPE_LABELS[type as "ACADEMIC" | "PROFESSIONAL"]}</span>
+              <span className="label-text">{TYPE_LABELS[type as InternshipType]}</span>
             </label>
           ))}
         </div>

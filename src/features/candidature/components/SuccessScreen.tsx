@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface SuccessScreenProps {
@@ -8,6 +9,13 @@ interface SuccessScreenProps {
 }
 
 export function SuccessScreen({ trackingCode, email }: SuccessScreenProps) {
+  const [showToast, setShowToast] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowToast(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(trackingCode);
     alert("Code de suivi copié !");
@@ -15,6 +23,15 @@ export function SuccessScreen({ trackingCode, email }: SuccessScreenProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
+      {showToast && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="toast toast-success">
+            <div>
+              <span>✅ Candidature envoyée avec succès !</span>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-md w-full text-center">
         {/* Icône de succès */}
         <div className="mb-6">

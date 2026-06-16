@@ -48,7 +48,7 @@ export async function submitCandidature(
       lastName: formData.get("lastName"),
       email: formData.get("email"),
       phone1: formData.get("phone1"),
-      phone2: formData.get("phone2") || "",
+      phone2: formData.get("phone2"),
       school: formData.get("school"),
       field: formData.get("field"),
       level: formData.get("level"),

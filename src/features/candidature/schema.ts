@@ -1,10 +1,28 @@
 import { z } from "zod";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { InternshipType } from "@prisma/client";
+import { MIN_DURATION_MONTHS } from "@/shared/constants/domain";
 
 /**
  * VALIDATION — Schémas Zod pour chaque étape du formulaire de candidature.
  * Réutilisés côté client (validation avant envoi) ET côté serveur (dans l'action).
  */
+
+function isValidInternationalPhone(value: string) {
+  const phoneNumber = parsePhoneNumberFromString(value);
+  return phoneNumber?.isValid() ?? false;
+}
+
+const internationalPhoneSchema = z
+  .string()
+  .min(1, "Le numéro de téléphone est requis.")
+  .refine((value) => value.trim().startsWith("+"), {
+    message: "Le numéro doit commencer par l'indicatif international, ex. +33.",
+  })
+  .refine((value) => isValidInternationalPhone(value), {
+    message:
+      "Le numéro doit être un numéro international valide avec un indicatif pays.",
+  });
 
 // ===== ÉTAPE 1 : Informations personnelles =====
 export const step1InfosSchema = z.object({
@@ -18,18 +36,11 @@ export const step1InfosSchema = z.object({
     .max(100, "Le nom ne doit pas dépasser 100 caractères."),
   email: z
     .string()
+    .min(1, "L'email est requis.")
     .email("Veuillez entrer une adresse email valide.")
     .max(255),
-  phone1: z
-    .string()
-    .min(10, "Le numéro de téléphone doit avoir au moins 10 chiffres.")
-    .regex(/^[0-9\s\-\+\(\)]+$/, "Format de téléphone invalide."),
-  phone2: z
-    .string()
-    .min(10, "Le numéro de téléphone doit avoir au moins 10 chiffres.")
-    .regex(/^[0-9\s\-\+\(\)]+$/, "Format de téléphone invalide.")
-    .optional()
-    .default(""),
+  phone1: internationalPhoneSchema,
+  phone2: internationalPhoneSchema,
 });
 
 export type Step1InfosInput = z.infer<typeof step1InfosSchema>;
@@ -48,14 +59,9 @@ export const step2ParcoursSchema = z.object({
     .string()
     .min(1, "Le niveau d'étude est requis.")
     .max(100),
-  internshipType: z
-    .enum(["ACADEMIC", "PROFESSIONAL"], {
-      errorMap: () => ({ message: "Sélectionnez un type de stage valide." }),
-    })
-    .refine(
-      (type) => type === "ACADEMIC" || type === "PROFESSIONAL",
-      "Type de stage invalide."
-    ),
+  internshipType: z.nativeEnum(InternshipType, {
+    message: "Sélectionnez un type de stage valide.",
+  }),
   duration: z
     .string()
     .min(1, "La durée est requise.")
@@ -74,6 +80,28 @@ export const step2ParcoursSchema = z.object({
       "La date de début doit être dans le futur."
     ),
   reportRequired: z.boolean().default(false),
+}).superRefine((data, ctx) => {
+  const duration = Number(data.duration);
+  const minDuration = MIN_DURATION_MONTHS[data.internshipType];
+
+  if (!Number.isInteger(duration) || duration <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["duration"],
+      message: "La durée doit être un nombre entier de mois.",
+    });
+    return;
+  }
+
+  if (duration < minDuration) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["duration"],
+      message: `La durée doit être d'au moins ${minDuration} mois pour un stage ${
+        data.internshipType === "PROFESSIONAL" ? "professionnel" : "académique"
+      }.`,
+    });
+  }
 });
 
 export type Step2ParcoursInput = z.infer<typeof step2ParcoursSchema>;
