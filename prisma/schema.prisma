@@ -8,12 +8,10 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
   // URL "pooler" (transaction, port 6543) — utilisée par l'application.
-  url       = env("DATABASE_URL")
-  // URL "directe" (session, port 5432) — utilisée par les migrations Prisma.
-  // En local (Postgres/Docker), mets la MÊME valeur que DATABASE_URL.
-  directUrl = env("DIRECT_URL")
+  url      = env("DATABASE_URL")
+  // directUrl a été déplacée dans prisma.config.ts (Prisma v6+)
 }
 
 // --- Énumérations -------------------------------------------------------
