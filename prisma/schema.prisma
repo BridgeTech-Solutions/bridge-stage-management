@@ -9,9 +9,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // URL "pooler" (transaction, port 6543) — utilisée par l'application.
-  url      = env("DATABASE_URL")
-  // directUrl a été déplacée dans prisma.config.ts (Prisma v6+)
 }
 
 // --- Énumérations -------------------------------------------------------
@@ -28,8 +25,8 @@ enum InternshipType {
 }
 
 enum RequestStatus {
-  PENDING // En attente
-  PROCESS // Traitement en cours
+  PENDING  // En attente
+  PROCESS  // Traitement en cours
   ACCEPTED // Acceptée
   REJECTED // Rejetée
 }
@@ -40,7 +37,7 @@ enum RequestStatus {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String // toujours stocké HASHÉ (bcrypt)
+  password  String   // toujours stocké HASHÉ (bcrypt)
   name      String?
   role      Role     @default(RH)
   createdAt DateTime @default(now())
@@ -53,21 +50,21 @@ model InternshipRequest {
   trackingCode   String         @unique
   type           InternshipType
   status         RequestStatus  @default(PENDING)
-  duration       String // ex. "1 mois", "3 mois"
-  startDate      DateTime // date de début souhaitée
+  duration       String         // ex. "1 mois", "3 mois"
+  startDate      DateTime       // date de début souhaitée
   reportRequired Boolean        @default(false)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   // Relations
-  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  profileId  String     @unique
-  documents  Document[]
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String    @unique
+  documents Document[]
 }
 
 /// Informations personnelles du candidat liées à une demande.
 model Profile {
-  id        String  @id @default(cuid())
+  id        String @id @default(cuid())
   firstName String
   lastName  String
   email     String

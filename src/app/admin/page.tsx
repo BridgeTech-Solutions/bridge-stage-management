@@ -6,6 +6,7 @@ export default async function AdminPage() {
       <h1 className="text-3xl font-bold text-secondary mb-8">Tableau de bord RH (Mode Test)</h1>
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body">
+          {/* On le laisse vide de paramètres, car il gère tout en interne */}
           <RequestList /> 
         </div>
       </div>
