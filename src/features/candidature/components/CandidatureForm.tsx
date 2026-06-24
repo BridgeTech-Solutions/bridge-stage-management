@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useRef } from "react";
+import { useState, useActionState, useRef, useEffect } from "react";
 import type { InternshipType } from "@prisma/client";
 import { submitCandidature, type ActionState } from "../actions";
 import { step1InfosSchema, step2ParcoursSchema } from "../schema";
@@ -10,6 +10,7 @@ import { StepParcours } from "./StepParcours";
 import { StepDocuments } from "./StepDocuments";
 import { StepValidation } from "./StepValidation";
 import { SuccessScreen } from "./SuccessScreen";
+import { z } from "zod"; // Ajouté pour sécuriser le typage strict des erreurs Zod
 
 export type CurrentStep = 1 | 2 | 3 | 4;
 
@@ -37,20 +38,64 @@ export function CandidatureForm() {
     FormData
   >(submitCandidature, {});
 
+  // ==========================================
+  // PERSISTENCE DES DONNÉES (LOCAL STORAGE)
+  // ==========================================
+
+  // 1. Charger les données au montage initial du composant
+  useEffect(() => {
+    const savedStep = localStorage.getItem("bridge_current_step");
+    const savedStep1 = localStorage.getItem("bridge_step1_data");
+    const savedStep2 = localStorage.getItem("bridge_step2_data");
+
+    if (savedStep) setCurrentStep(Number(savedStep) as CurrentStep);
+    if (savedStep1) setStep1Data(JSON.parse(savedStep1));
+    if (savedStep2) setStep2Data(JSON.parse(savedStep2));
+  }, []);
+
+  // 2. Sauvegarder l'étape courante
+  useEffect(() => {
+    localStorage.setItem("bridge_current_step", String(currentStep));
+  }, [currentStep]);
+
+  // 3. Sauvegarder l'étape 1 dès qu'une modification survient
+  useEffect(() => {
+    if (Object.keys(step1Data).length > 0) {
+      localStorage.setItem("bridge_step1_data", JSON.stringify(step1Data));
+    }
+  }, [step1Data]);
+
+  // 4. Sauvegarder l'étape 2 dès qu'une modification survient
+  useEffect(() => {
+    if (Object.keys(step2Data).length > 0) {
+      localStorage.setItem("bridge_step2_data", JSON.stringify(step2Data));
+    }
+  }, [step2Data]);
+
+  // 5. Nettoyer le stockage local si la soumission est un succès total
+  useEffect(() => {
+    if (actionState.success && actionState.trackingCode) {
+      localStorage.removeItem("bridge_current_step");
+      localStorage.removeItem("bridge_step1_data");
+      localStorage.removeItem("bridge_step2_data");
+    }
+  }, [actionState.success, actionState.trackingCode]);
+
+  // ==========================================
+  // GESTIONNAIRES D'ÉVÉNEMENTS
+  // ==========================================
+
   // Gestion du changement de champ (étape 1)
   const handleStep1Change = (field: keyof Step1InfosInput, value: string) => {
     const newData = { ...step1Data, [field]: value };
     setStep1Data(newData);
     
-    // Seulement afficher l'erreur pour ce champ spécifique
-    if (step1Errors[field]) {
-      // Valider juste ce champ pour nettoyer le message d'erreur si c'est bon
-      const testData = { ...step1Data, [field]: value };
-      const result = step1InfosSchema.safeParse(testData);
-      if (result.success || !result.error.issues.some(issue => issue.path[0] === field)) {
-        // Nettoyer l'erreur pour ce champ
+    // Correction : Utilisation de "field as string" pour immuniser contre le type symbol
+    if (step1Errors[field as string]) {
+      const result = step1InfosSchema.safeParse(newData);
+      if (result.success || !result.error.issues.some((issue: z.ZodIssue) => issue.path[0] === field)) {
         const newErrors = { ...step1Errors };
-        delete newErrors[field];
+        delete newErrors[field as string];
         setStep1Errors(newErrors);
       }
     }
@@ -64,15 +109,12 @@ export function CandidatureForm() {
     const newData = { ...step2Data, [field]: value };
     setStep2Data(newData);
     
-    // Seulement afficher l'erreur pour ce champ spécifique
-    if (step2Errors[field]) {
-      // Valider juste ce champ pour nettoyer le message d'erreur si c'est bon
-      const testData = { ...step2Data, [field]: value };
-      const result = step2ParcoursSchema.safeParse(testData);
-      if (result.success || !result.error.issues.some(issue => issue.path[0] === field)) {
-        // Nettoyer l'erreur pour ce champ
+    // Correction : Sécurisation de l'indexation de l'objet d'erreurs
+    if (step2Errors[field as string]) {
+      const result = step2ParcoursSchema.safeParse(newData);
+      if (result.success || !result.error.issues.some((issue: z.ZodIssue) => issue.path[0] === field)) {
         const newErrors = { ...step2Errors };
-        delete newErrors[field];
+        delete newErrors[field as string];
         setStep2Errors(newErrors);
       }
     }
@@ -114,11 +156,7 @@ export function CandidatureForm() {
   // Validation de l'étape 3 (documents)
   const validateStep3 = (): boolean => {
     const internshipType = step2Data.internshipType as InternshipType | undefined;
-    if (!internshipType) {
-      return false;
-    }
-    // La validation des documents est faite côté composant StepDocuments
-    // Ici on ne fait qu'une vérification basique
+    if (!internshipType) return false;
     return uploadedFiles.size > 0;
   };
 
@@ -142,10 +180,8 @@ export function CandidatureForm() {
   // Gestion de la soumission du formulaire (étape 4)
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (!formRef.current) return;
 
-    // Créer un FormData avec les données de toutes les étapes
     const formData = new FormData(formRef.current);
 
     // Ajouter les données step1
@@ -167,11 +203,10 @@ export function CandidatureForm() {
       formData.append(key, file);
     });
 
-    // Appeler l'action serveur
     await formAction(formData);
   };
 
-  // Si succès, afficher l'écran de confirmation
+  // Si succès, afficher l'écran de confirmation complet
   if (actionState.success && actionState.trackingCode) {
     return (
       <SuccessScreen
@@ -181,29 +216,7 @@ export function CandidatureForm() {
     );
   }
 
-  // Si erreur, afficher le message
-  if (actionState.error && !isPending) {
-    return (
-      <div className="alert alert-error mb-6">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          className="stroke-current shrink-0 w-6 h-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <span>{actionState.error}</span>
-      </div>
-    );
-  }
-
-  // Écran de chargement
+  // Écran de chargement pendant la soumission
   if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
@@ -248,20 +261,35 @@ export function CandidatureForm() {
           {currentStep === 4 && "✓ Vérification finale"}
         </h2>
         <p className="text-base-content/60">
-          {currentStep === 1 &&
-            "Commençons par vos informations de contact."}
-          {currentStep === 2 &&
-            "Parlez-nous de votre formation et du stage souhaité."}
-          {currentStep === 3 &&
-            "Uploadez les documents requis pour votre candidature."}
-          {currentStep === 4 &&
-            "Vérifiez vos informations avant d'envoyer."}
+          {currentStep === 1 && "Commençons par vos informations de contact."}
+          {currentStep === 2 && "Parlez-nous de votre formation et du stage souhaité."}
+          {currentStep === 3 && "Uploadez les documents requis pour votre candidature."}
+          {currentStep === 4 && "Vérifiez vos informations avant d'envoyer."}
         </p>
       </div>
 
+      {/* Affichage des erreurs serveur INSIDE le formulaire */}
+      {actionState.error && (
+        <div className="alert alert-error mb-6">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{actionState.error}</span>
+        </div>
+      )}
+
       {/* Contenu de l'étape */}
       <div className="mb-8">
-        {/* Étape 1 */}
         {currentStep === 1 && (
           <StepInfos
             data={step1Data}
@@ -270,7 +298,6 @@ export function CandidatureForm() {
           />
         )}
 
-        {/* Étape 2 */}
         {currentStep === 2 && (
           <StepParcours
             data={step2Data}
@@ -279,7 +306,6 @@ export function CandidatureForm() {
           />
         )}
 
-        {/* Étape 3 */}
         {currentStep === 3 && (
           <StepDocuments
             internshipType={step2Data.internshipType as InternshipType | undefined}
@@ -288,7 +314,6 @@ export function CandidatureForm() {
           />
         )}
 
-        {/* Étape 4 */}
         {currentStep === 4 && (
           <StepValidation
             step1={step1Data}

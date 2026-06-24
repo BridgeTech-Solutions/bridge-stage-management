@@ -1,124 +1,33 @@
 import { z } from "zod";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
-import { InternshipType } from "@prisma/client";
-import { MIN_DURATION_MONTHS } from "@/shared/constants/domain";
 
-/**
- * VALIDATION — Schémas Zod pour chaque étape du formulaire de candidature.
- * Réutilisés côté client (validation avant envoi) ET côté serveur (dans l'action).
- */
-
-function isValidInternationalPhone(value: string) {
-  const phoneNumber = parsePhoneNumberFromString(value);
-  return phoneNumber?.isValid() ?? false;
-}
-
-const internationalPhoneSchema = z
-  .string()
-  .min(1, "Le numéro de téléphone est requis.")
-  .refine((value) => value.trim().startsWith("+"), {
-    message: "Le numéro doit commencer par l'indicatif international, ex. +33.",
-  })
-  .refine((value) => isValidInternationalPhone(value), {
-    message:
-      "Le numéro doit être un numéro international valide avec un indicatif pays.",
-  });
-
-// ===== ÉTAPE 1 : Informations personnelles =====
+// ==========================================
+// 1. Schémas (La définition des données)
+// ==========================================
 export const step1InfosSchema = z.object({
-  firstName: z
-    .string()
-    .min(1, "Le prénom est requis.")
-    .max(100, "Le prénom ne doit pas dépasser 100 caractères."),
-  lastName: z
-    .string()
-    .min(1, "Le nom est requis.")
-    .max(100, "Le nom ne doit pas dépasser 100 caractères."),
-  email: z
-    .string()
-    .min(1, "L'email est requis.")
-    .email("Veuillez entrer une adresse email valide.")
-    .max(255),
-  phone1: internationalPhoneSchema,
-  phone2: internationalPhoneSchema,
+  firstName: z.string().min(2, "Le prénom est requis"),
+  lastName: z.string().min(2, "Le nom est requis"),
+  email: z.string().email("Adresse email invalide"),
+  phone: z.string().min(9, "Le numéro de téléphone est requis"),
 });
 
-export type Step1InfosInput = z.infer<typeof step1InfosSchema>;
-
-// ===== ÉTAPE 2 : Parcours académique et paramètres du stage =====
 export const step2ParcoursSchema = z.object({
-  school: z
-    .string()
-    .min(1, "L'école/université est requise.")
-    .max(255),
-  field: z
-    .string()
-    .min(1, "La filière est requise.")
-    .max(255),
-  level: z
-    .string()
-    .min(1, "Le niveau d'étude est requis.")
-    .max(100),
-  internshipType: z.nativeEnum(InternshipType, {
-    message: "Sélectionnez un type de stage valide.",
-  }),
-  duration: z
-    .string()
-    .min(1, "La durée est requise.")
-    .regex(/^\d+$/, "La durée doit être un nombre de mois."),
-  startDate: z
-    .string()
-    .refine(
-      (date) => {
-        const d = new Date(date);
-        return !isNaN(d.getTime());
-      },
-      "Date invalide."
-    )
-    .refine(
-      (date) => new Date(date) > new Date(),
-      "La date de début doit être dans le futur."
-    ),
-  reportRequired: z.boolean().default(false),
-}).superRefine((data, ctx) => {
-  const duration = Number(data.duration);
-  const minDuration = MIN_DURATION_MONTHS[data.internshipType];
-
-  if (!Number.isInteger(duration) || duration <= 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["duration"],
-      message: "La durée doit être un nombre entier de mois.",
-    });
-    return;
-  }
-
-  if (duration < minDuration) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["duration"],
-      message: `La durée doit être d'au moins ${minDuration} mois pour un stage ${
-        data.internshipType === "PROFESSIONAL" ? "professionnel" : "académique"
-      }.`,
-    });
-  }
+  school: z.string().min(2, "L'école est requise"),
+  field: z.string().min(2, "La filière est requise"),
+  level: z.string().min(1, "Le niveau d'étude est requis"),
+  internshipType: z.enum(["ACADEMIC", "PROFESSIONAL"]),
+  duration: z.string().min(1, "La durée du stage est requise"),
+  startDate: z.string().min(1, "La date de début souhaitée est requise"), 
+  reportRequired: z.boolean(),
 });
 
+export const completeApplicationSchema = z.object({
+  ...step1InfosSchema.shape,
+  ...step2ParcoursSchema.shape,
+});
+
+// ==========================================
+// 2. Types (La signature pour tes composants)
+// ==========================================
+export type Step1InfosInput = z.infer<typeof step1InfosSchema>;
 export type Step2ParcoursInput = z.infer<typeof step2ParcoursSchema>;
-
-// ===== ÉTAPE 3 : Upload de documents =====
-// Note : les fichiers seront validés dans le composant + dans l'action
-export const step3DocumentsSchema = z.record(
-  z.string(),
-  z.instanceof(File).optional()
-);
-
-export type Step3DocumentsInput = z.infer<typeof step3DocumentsSchema>;
-
-// ===== ÉTAPE 4 : Récapitulatif (pas de validation supplémentaire) =====
-// Les données des étapes précédentes sont déjà validées
-
-// ===== SCHÉMA GLOBAL : complet de la candidature =====
-export const completeApplicationSchema = step1InfosSchema.merge(step2ParcoursSchema);
-
 export type CompleteApplicationInput = z.infer<typeof completeApplicationSchema>;

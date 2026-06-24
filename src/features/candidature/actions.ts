@@ -21,7 +21,6 @@ export type ActionState = {
 
 /**
  * Génère un code de suivi aléatoire et non devinable.
- * Format : 8 caractères alphanumériques en majuscules (ex: A7B2K9M1)
  */
 function generateTrackingCode(): string {
   return randomBytes(4)
@@ -43,12 +42,12 @@ export async function submitCandidature(
 ): Promise<ActionState> {
   try {
     // ===== 1. Validation des données personnelles et parcours =====
+    // Correction : Utilisation du champ 'phone' conforme au schema.ts
     const parsed = completeApplicationSchema.safeParse({
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
       email: formData.get("email"),
-      phone1: formData.get("phone1"),
-      phone2: formData.get("phone2"),
+      phone: formData.get("phone"),
       school: formData.get("school"),
       field: formData.get("field"),
       level: formData.get("level"),
@@ -59,6 +58,7 @@ export async function submitCandidature(
     });
 
     if (!parsed.success) {
+      // Retourne la première erreur trouvée pour guider l'utilisateur
       const firstError = parsed.error.issues[0]?.message ?? "Données invalides.";
       return { error: firstError };
     }
@@ -69,23 +69,19 @@ export async function submitCandidature(
     // ===== 2. Validation et upload des documents =====
     const uploadedDocuments: { label: string; url: string }[] = [];
 
-    // Parcourir tous les champs du FormData pour trouver les fichiers uploadés
     for (const [key, value] of formData.entries()) {
       if (key.startsWith("documents_") && value instanceof File && value.size > 0) {
-        // Extraire le label du document depuis la clé (ex: "documents_CV à jour" -> "CV à jour")
         const label = key
           .substring("documents_".length)
           .split("_")
           .slice(0, -1)
           .join(" ");
 
-        // Valider le PDF
         const validationError = validatePdf(value);
         if (validationError) {
           return { error: validationError };
         }
 
-        // Upload sur Supabase (sera organisé par requestId une fois créé)
         try {
           const url = await uploadDocument(value, "temp");
           uploadedDocuments.push({ label: label || value.name, url });
@@ -98,7 +94,6 @@ export async function submitCandidature(
       }
     }
 
-    // Vérifier qu'au moins un document a été uploadé
     if (uploadedDocuments.length === 0) {
       return {
         error: "Au moins un document doit être uploadé.",
@@ -111,12 +106,13 @@ export async function submitCandidature(
 
     try {
       // Créer le profil du candidat
+      // Correction : Utilisation de data.phone unique
       const profile = await prisma.profile.create({
         data: {
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
-          phone: data.phone1,
+          phone: data.phone, 
           school: data.school,
           field: data.field,
           level: data.level,

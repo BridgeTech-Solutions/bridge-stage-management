@@ -72,7 +72,7 @@ export function StepInfos({ data, onChange, errors = {} }: StepInfosProps) {
         </label>
         <input
           type="email"
-          placeholder="votre@email.com"
+          placeholder="votre.adresse@email.com"
           className={`input input-bordered ${errors.email ? "input-error" : ""}`}
           value={data.email || ""}
           onChange={(e) => onChange("email", e.target.value)}
@@ -85,51 +85,30 @@ export function StepInfos({ data, onChange, errors = {} }: StepInfosProps) {
         )}
       </div>
 
-      {/* Téléphone 1 */}
+      {/* Téléphone (Principal) - CORRIGÉ ICI */}
       <div className="form-control">
         <label className="label">
           <span className="label-text font-semibold">
-            Téléphone 1 <span className="text-error">*</span>
+            Téléphone (Principal) <span className="text-error">*</span>
           </span>
         </label>
         <input
           type="tel"
-          placeholder="+33 6 12 34 56 78"
-          className={`input input-bordered ${errors.phone1 ? "input-error" : ""}`}
-          value={data.phone1 || ""}
-          onChange={(e) => onChange("phone1", e.target.value)}
+          placeholder="+237 677 88 99 00"
+          className={`input input-bordered ${errors.phone ? "input-error" : ""}`}
+          value={data.phone || ""}
+          onChange={(e) => onChange("phone", e.target.value)}
           required
         />
-        {errors.phone1 && (
+        {errors.phone && (
           <label className="label">
-            <span className="label-text-alt text-error">{errors.phone1}</span>
+            <span className="label-text-alt text-error">{errors.phone}</span>
           </label>
         )}
       </div>
 
-      {/* Téléphone 2 */}
-      <div className="form-control">
-        <label className="label">
-          <span className="label-text font-semibold">
-            Téléphone 2 <span className="text-error">*</span>
-          </span>
-        </label>
-        <input
-          type="tel"
-          placeholder="+33 7 12 34 56 78"
-          className={`input input-bordered ${errors.phone2 ? "input-error" : ""}`}
-          value={data.phone2 || ""}
-          onChange={(e) => onChange("phone2", e.target.value)}
-          required
-        />
-        {errors.phone2 && (
-          <label className="label">
-            <span className="label-text-alt text-error">{errors.phone2}</span>
-          </label>
-        )}
-      </div>
-
-      <div className="alert alert-info">
+      {/* Message d'information */}
+      <div className="alert alert-info text-sm">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -143,7 +122,9 @@ export function StepInfos({ data, onChange, errors = {} }: StepInfosProps) {
             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           ></path>
         </svg>
-        <span>Les 2 numéros de téléphone sont obligatoires et doivent être valides.</span>
+        <span>
+          Le numéro de téléphone est requis. Pensez à inclure l'indicatif international (ex: <strong>+237</strong>).
+        </span>
       </div>
     </div>
   );

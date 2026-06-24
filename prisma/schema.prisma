@@ -62,9 +62,9 @@ model InternshipRequest {
   updatedAt      DateTime       @updatedAt
 
   // Relations
-  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  profileId  String     @unique
-  documents  Document[]
+  profile   Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String         @unique
+  documents Document[]
 }
 
 /// Informations personnelles du candidat liées à une demande.
