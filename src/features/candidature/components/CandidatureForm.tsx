@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useRef, useEffect } from "react";
+import { useState, useActionState, useRef, useEffect, startTransition } from "react";
 import type { InternshipType } from "@prisma/client";
 import { submitCandidature, type ActionState } from "../actions";
 import { step1InfosSchema, step2ParcoursSchema } from "../schema";
@@ -10,7 +10,7 @@ import { StepParcours } from "./StepParcours";
 import { StepDocuments } from "./StepDocuments";
 import { StepValidation } from "./StepValidation";
 import { SuccessScreen } from "./SuccessScreen";
-import { z } from "zod"; // Ajouté pour sécuriser le typage strict des erreurs Zod
+import { z } from "zod";
 
 export type CurrentStep = 1 | 2 | 3 | 4;
 
@@ -42,7 +42,6 @@ export function CandidatureForm() {
   // PERSISTENCE DES DONNÉES (LOCAL STORAGE)
   // ==========================================
 
-  // 1. Charger les données au montage initial du composant
   useEffect(() => {
     const savedStep = localStorage.getItem("bridge_current_step");
     const savedStep1 = localStorage.getItem("bridge_step1_data");
@@ -53,26 +52,22 @@ export function CandidatureForm() {
     if (savedStep2) setStep2Data(JSON.parse(savedStep2));
   }, []);
 
-  // 2. Sauvegarder l'étape courante
   useEffect(() => {
     localStorage.setItem("bridge_current_step", String(currentStep));
   }, [currentStep]);
 
-  // 3. Sauvegarder l'étape 1 dès qu'une modification survient
   useEffect(() => {
     if (Object.keys(step1Data).length > 0) {
       localStorage.setItem("bridge_step1_data", JSON.stringify(step1Data));
     }
   }, [step1Data]);
 
-  // 4. Sauvegarder l'étape 2 dès qu'une modification survient
   useEffect(() => {
     if (Object.keys(step2Data).length > 0) {
       localStorage.setItem("bridge_step2_data", JSON.stringify(step2Data));
     }
   }, [step2Data]);
 
-  // 5. Nettoyer le stockage local si la soumission est un succès total
   useEffect(() => {
     if (actionState.success && actionState.trackingCode) {
       localStorage.removeItem("bridge_current_step");
@@ -85,12 +80,10 @@ export function CandidatureForm() {
   // GESTIONNAIRES D'ÉVÉNEMENTS
   // ==========================================
 
-  // Gestion du changement de champ (étape 1)
   const handleStep1Change = (field: keyof Step1InfosInput, value: string) => {
     const newData = { ...step1Data, [field]: value };
     setStep1Data(newData);
     
-    // Correction : Utilisation de "field as string" pour immuniser contre le type symbol
     if (step1Errors[field as string]) {
       const result = step1InfosSchema.safeParse(newData);
       if (result.success || !result.error.issues.some((issue: z.ZodIssue) => issue.path[0] === field)) {
@@ -101,7 +94,6 @@ export function CandidatureForm() {
     }
   };
 
-  // Gestion du changement de champ (étape 2)
   const handleStep2Change = (
     field: keyof Step2ParcoursInput,
     value: string | boolean
@@ -109,7 +101,6 @@ export function CandidatureForm() {
     const newData = { ...step2Data, [field]: value };
     setStep2Data(newData);
     
-    // Correction : Sécurisation de l'indexation de l'objet d'erreurs
     if (step2Errors[field as string]) {
       const result = step2ParcoursSchema.safeParse(newData);
       if (result.success || !result.error.issues.some((issue: z.ZodIssue) => issue.path[0] === field)) {
@@ -120,25 +111,20 @@ export function CandidatureForm() {
     }
   };
 
-  // Validation complète de l'étape 1
   const validateStep1 = (): boolean => {
     const result = step1InfosSchema.safeParse(step1Data);
-    console.log("🔍 Validation Step1:", { step1Data, result });
     if (!result.success) {
       const errors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
         errors[issue.path[0] as string] = issue.message;
       });
       setStep1Errors(errors);
-      console.log("❌ Step1 errors:", errors);
       return false;
     }
     setStep1Errors({});
-    console.log("✅ Step1 valid!");
     return true;
   };
 
-  // Validation complète de l'étape 2
   const validateStep2 = (): boolean => {
     const result = step2ParcoursSchema.safeParse(step2Data);
     if (!result.success) {
@@ -153,14 +139,12 @@ export function CandidatureForm() {
     return true;
   };
 
-  // Validation de l'étape 3 (documents)
   const validateStep3 = (): boolean => {
     const internshipType = step2Data.internshipType as InternshipType | undefined;
     if (!internshipType) return false;
     return uploadedFiles.size > 0;
   };
 
-  // Navigation
   const handleNext = () => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
@@ -178,7 +162,7 @@ export function CandidatureForm() {
   };
 
   // Gestion de la soumission du formulaire (étape 4)
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formRef.current) return;
 
@@ -203,7 +187,10 @@ export function CandidatureForm() {
       formData.append(key, file);
     });
 
-    await formAction(formData);
+    // LE FIX : Envelopper l'appel dans startTransition
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   // Si succès, afficher l'écran de confirmation complet
