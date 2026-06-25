@@ -17,7 +17,8 @@ export default function Home() {
           />
         </div>
         <div className="flex-none">
-          <Link href="/admin" className="btn btn-ghost btn-sm">
+          {/* Ton lien vers l'admin est bien ici */}
+          <Link href="/admin" className="btn btn-ghost btn-sm text-secondary font-semibold">
             Espace RH
           </Link>
         </div>
