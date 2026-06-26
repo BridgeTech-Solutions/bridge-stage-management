@@ -19,6 +19,9 @@ export type ActionState = {
   trackingCode?: string;
 };
 
+// Barrière de sécurité stricte côté serveur : 2 Mo maximum par fichier (en octets)
+const MAX_FILE_SIZE = 2 * 1024 * 1024; 
+
 /**
  * Génère un code de suivi aléatoire et non devinable.
  * Format : 8 caractères alphanumériques en majuscules (ex: A7B2K9M1)
@@ -34,7 +37,7 @@ function generateTrackingCode(): string {
  * Server Action : crée une candidature complète.
  * 1. Valide les données (Zod)
  * 2. Upload les fichiers sur Supabase
- * 3. Crée Profile + InternshipRequest + Document[] en base
+ * 3. Crée Profile + InternshipRequest + Document[] en base Supabase
  * 4. Retourne le code de suivi ou une erreur
  */
 export async function submitCandidature(
@@ -47,8 +50,7 @@ export async function submitCandidature(
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
       email: formData.get("email"),
-      phone1: formData.get("phone1"),
-      phone2: formData.get("phone2"),
+      phone: formData.get("phone"), // Unique champ aligné sur le format Cameroun
       school: formData.get("school"),
       field: formData.get("field"),
       level: formData.get("level"),
@@ -72,6 +74,14 @@ export async function submitCandidature(
     // Parcourir tous les champs du FormData pour trouver les fichiers uploadés
     for (const [key, value] of formData.entries()) {
       if (key.startsWith("documents_") && value instanceof File && value.size > 0) {
+        
+        // Sécurité Serveur : Blocage strict si un fichier individuel franchit la barre des 2 Mo
+        if (value.size > MAX_FILE_SIZE) {
+          return { 
+            error: `Le fichier "${value.name}" est trop lourd. La taille maximale autorisée est de 2 Mo.` 
+          };
+        }
+
         // Extraire le label du document depuis la clé (ex: "documents_CV à jour" -> "CV à jour")
         const label = key
           .substring("documents_".length)
@@ -79,7 +89,7 @@ export async function submitCandidature(
           .slice(0, -1)
           .join(" ");
 
-        // Valider le PDF
+        // Valider le format PDF
         const validationError = validatePdf(value);
         if (validationError) {
           return { error: validationError };
@@ -116,7 +126,7 @@ export async function submitCandidature(
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
-          phone: data.phone1,
+          phone: data.phone, // Assignation du numéro unique camerounais validé
           school: data.school,
           field: data.field,
           level: data.level,
