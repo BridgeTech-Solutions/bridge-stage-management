@@ -1,7 +1,7 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/shared/auth/auth';
+import { auth } from '@/shared/auth/auth'; // Vérifie que ton fichier auth.ts est bien ici
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,10 +15,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
 
-    // Vérification du rôle (on suppose que tu as un rôle 'ADMIN')
-    // Ajuste 'ADMIN' selon la valeur exacte en base de données
-    if (session.user?.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/', request.url)); // On renvoie les intrus à l'accueil
+    // 2. Vérification des rôles (ADMIN et RH autorisés)
+    const role = session.user?.role;
+    const isAuthorized = role === 'ADMIN' || role === 'RH';
+
+    if (!isAuthorized) {
+      // On renvoie les intrus (ex: un utilisateur normal) vers l'accueil
+      return NextResponse.redirect(new URL('/', request.url));
     }
   }
 
