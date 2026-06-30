@@ -1,45 +1,55 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "../../shared/db/prisma"; // Alignement sur ton instance Prisma réelle
+import { prisma } from "@/shared/db/prisma";
+import { notifyStatusChange } from "@/features/notifications/actions/send-notification"; // Import ajouté
 
 export type AdminActionState = {
   error?: string;
   success?: boolean;
 };
 
-/**
- * Server Action : Met à jour le statut d'une demande de stage.
- * Sécurité : Valide que le statut transmis fait partie des choix autorisés.
- */
 export async function updateCandidatureStatus(
   id: string,
   newStatus: "PENDING" | "PROCESS" | "ACCEPTED" | "REJECTED"
 ): Promise<AdminActionState> {
   try {
-    // 1. Vérification de sécurité sur le statut
     const allowedStatuses = ["PENDING", "PROCESS", "ACCEPTED", "REJECTED"];
     if (!allowedStatuses.includes(newStatus)) {
       return { error: "Statut de candidature invalide." };
     }
 
-    // 2. Mise à jour dans la base de données
-    await prisma.internshipRequest.update({
+    // 1. Récupérer les infos du candidat AVANT la mise à jour pour envoyer le mail
+    const request = await prisma.internshipRequest.findUnique({
       where: { id },
-      data: {
-        status: newStatus,
-      },
+      include: { profile: true },
     });
 
-    // 3. Revalidation des pages de l'administration pour rafraîchir les données à l'écran
+    if (!request || !request.profile) {
+      return { error: "Candidature introuvable." };
+    }
+
+    // 2. Mise à jour en base de données
+    await prisma.internshipRequest.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+
+    // 3. --- CÂBLAGE : Notification automatique ---
+    // On notifie le candidat avec son email et son nom récupérés via la relation prisma
+    await notifyStatusChange(
+      request.profile.email,
+      `${request.profile.firstName} ${request.profile.lastName}`,
+      newStatus,
+      request.trackingCode
+    );
+
     revalidatePath("/admin");
     revalidatePath(`/admin/${id}`);
 
     return { success: true };
   } catch (error) {
-    console.error(`[admin-actions] Erreur lors de la modification du statut de la demande ${id}:`, error);
-    return {
-      error: "Une erreur est survenue lors de la mise à jour du statut. Veuillez réessayer.",
-    };
+    console.error(`[admin-actions] Erreur lors de la mise à jour ${id}:`, error);
+    return { error: "Une erreur est survenue lors de la mise à jour." };
   }
 }

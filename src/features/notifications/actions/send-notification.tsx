@@ -1,7 +1,8 @@
-// src/features/notifications/actions/send-notification.ts
+"use server"; // Indispensable pour une Server Action
+
 import { sendEmail } from '@/shared/mail/resend-service';
-import SubmissionConfirmationEmail from '../templates/SubmissionConfirmationEmail';
-import StatusChangedEmail from '../templates/StatusChangedEmail';
+import SubmissionConfirmationEmail from '@/features/notifications/templates/SubmissionConfirmationEmail';
+import StatusChangedEmail from '@/features/notifications/templates/StatusChangedEmail';
 import React from 'react';
 
 // Fonction interne pour ne jamais bloquer l'exécution

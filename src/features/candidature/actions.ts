@@ -7,11 +7,7 @@ import { validatePdf } from "@/shared/validation/file";
 import { completeApplicationSchema } from "./schema";
 import { randomBytes } from "crypto";
 import type { InternshipType } from "@prisma/client";
-
-/**
- * ÉCRITURES — Server Action qui crée une demande de stage complète.
- * Pattern : (état précédent, FormData) -> ActionResult avec tracking code ou erreur.
- */
+import { notifySubmission } from "@/features/notifications/actions/send-notification"; // Import ajouté
 
 export type ActionState = {
   error?: string;
@@ -19,13 +15,8 @@ export type ActionState = {
   trackingCode?: string;
 };
 
-// Barrière de sécurité stricte côté serveur : 2 Mo maximum par fichier (en octets)
 const MAX_FILE_SIZE = 2 * 1024 * 1024; 
 
-/**
- * Génère un code de suivi aléatoire et non devinable.
- * Format : 8 caractères alphanumériques en majuscules (ex: A7B2K9M1)
- */
 function generateTrackingCode(): string {
   return randomBytes(4)
     .toString("hex")
@@ -33,24 +24,16 @@ function generateTrackingCode(): string {
     .substring(0, 8);
 }
 
-/**
- * Server Action : crée une candidature complète.
- * 1. Valide les données (Zod)
- * 2. Upload les fichiers sur Supabase
- * 3. Crée Profile + InternshipRequest + Document[] en base Supabase
- * 4. Retourne le code de suivi ou une erreur
- */
 export async function submitCandidature(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
   try {
-    // ===== 1. Validation des données personnelles et parcours =====
     const parsed = completeApplicationSchema.safeParse({
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
       email: formData.get("email"),
-      phone: formData.get("phone"), // Unique champ aligné sur le format Cameroun
+      phone: formData.get("phone"),
       school: formData.get("school"),
       field: formData.get("field"),
       level: formData.get("level"),
@@ -68,72 +51,44 @@ export async function submitCandidature(
     const data = parsed.data;
     const internshipType = data.internshipType as InternshipType;
 
-    // ===== 2. Validation et upload des documents =====
     const uploadedDocuments: { label: string; url: string }[] = [];
 
-    // Parcourir tous les champs du FormData pour trouver les fichiers uploadés
     for (const [key, value] of formData.entries()) {
       if (key.startsWith("documents_") && value instanceof File && value.size > 0) {
-        
-        // Sécurité Serveur : Blocage strict si un fichier individuel franchit la barre des 2 Mo
         if (value.size > MAX_FILE_SIZE) {
-          return { 
-            error: `Le fichier "${value.name}" est trop lourd. La taille maximale autorisée est de 2 Mo.` 
-          };
+          return { error: `Le fichier "${value.name}" est trop lourd.` };
         }
-
-        // Extraire le label du document depuis la clé (ex: "documents_CV à jour" -> "CV à jour")
-        const label = key
-          .substring("documents_".length)
-          .split("_")
-          .slice(0, -1)
-          .join(" ");
-
-        // Valider le format PDF
+        const label = key.substring("documents_".length).split("_").slice(0, -1).join(" ");
         const validationError = validatePdf(value);
-        if (validationError) {
-          return { error: validationError };
-        }
+        if (validationError) return { error: validationError };
 
-        // Upload sur Supabase (sera organisé par requestId une fois créé)
         try {
           const url = await uploadDocument(value, "temp");
           uploadedDocuments.push({ label: label || value.name, url });
         } catch (uploadError) {
-          console.error("[candidature] Upload error:", uploadError);
-          return {
-            error: `Erreur lors de l'upload du fichier. Veuillez réessayer.`,
-          };
+          return { error: `Erreur lors de l'upload.` };
         }
       }
     }
 
-    // Vérifier qu'au moins un document a été uploadé
-    if (uploadedDocuments.length === 0) {
-      return {
-        error: "Au moins un document doit être uploadé.",
-      };
-    }
+    if (uploadedDocuments.length === 0) return { error: "Au moins un document requis." };
 
-    // ===== 3. Créer le profil + demande + documents en base =====
     const trackingCode = generateTrackingCode();
     const startDate = new Date(data.startDate);
 
     try {
-      // Créer le profil du candidat
       const profile = await prisma.profile.create({
         data: {
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
-          phone: data.phone, // Assignation du numéro unique camerounais validé
+          phone: data.phone,
           school: data.school,
           field: data.field,
           level: data.level,
         },
       });
 
-      // Créer la demande de stage
       const internshipRequest = await prisma.internshipRequest.create({
         data: {
           trackingCode,
@@ -146,7 +101,6 @@ export async function submitCandidature(
         },
       });
 
-      // Créer les documents associés
       if (uploadedDocuments.length > 0) {
         await prisma.document.createMany({
           data: uploadedDocuments.map((doc) => ({
@@ -157,24 +111,17 @@ export async function submitCandidature(
         });
       }
 
-      // ===== 4. Revalider et retourner le code de suivi =====
-      revalidatePath("/candidature");
+      // --- CÂBLAGE : Notification automatique ---
+      await notifySubmission(profile.email, `${profile.firstName} ${profile.lastName}`, trackingCode);
 
-      return {
-        success: true,
-        trackingCode,
-      };
+      revalidatePath("/candidature");
+      return { success: true, trackingCode };
+
     } catch (dbError) {
-      console.error("[candidature] Erreur base de données:", dbError);
-      return {
-        error:
-          "Une erreur est survenue lors de la création de votre demande. Veuillez réessayer.",
-      };
+      console.error("[candidature] Erreur:", dbError);
+      return { error: "Erreur lors de la création de la demande." };
     }
   } catch (error) {
-    console.error("[candidature] Erreur serveur:", error);
-    return {
-      error: "Erreur serveur. Veuillez réessayer plus tard.",
-    };
+    return { error: "Erreur serveur." };
   }
 }
