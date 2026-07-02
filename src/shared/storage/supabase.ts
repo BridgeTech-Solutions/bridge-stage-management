@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const storageBucketName = process.env.SUPABASE_STORAGE_BUCKET ?? "documents";
 
 if (!supabaseUrl || !supabaseServiceKey) {
   // En dev, on prévient clairement le stagiaire si la config manque.
@@ -21,7 +22,7 @@ export const supabase = createClient(supabaseUrl ?? "", supabaseServiceKey ?? ""
 });
 
 /** Nom du bucket Supabase où sont stockés les documents des candidats. */
-export const DOCUMENTS_BUCKET = "documents";
+export const DOCUMENTS_BUCKET = storageBucketName;
 
 /**
  * Téléverse un fichier PDF dans Supabase Storage et renvoie son URL publique.
@@ -29,13 +30,21 @@ export const DOCUMENTS_BUCKET = "documents";
  * @param pathPrefix Dossier logique (ex. l'id de la demande).
  */
 export async function uploadDocument(file: File, pathPrefix: string): Promise<string> {
-  const path = `${pathPrefix}/${Date.now()}-${file.name}`;
-  const { error } = await supabase.storage
+  const safeFileName = file.name.replace(/\s+/g, "_");
+  const path = `${pathPrefix}/${Date.now()}-${safeFileName}`;
+  const { error: uploadError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .upload(path, file, { contentType: "application/pdf", upsert: false });
+    .upload(path, file, { contentType: file.type || "application/pdf", upsert: false });
 
-  if (error) throw new Error(`Échec de l'upload : ${error.message}`);
+  if (uploadError) throw new Error(`Échec de l'upload : ${uploadError.message}`);
 
-  const { data } = supabase.storage.from(DOCUMENTS_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  const { data, error: signedUrlError } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 7);
+
+  if (signedUrlError) {
+    throw new Error(`Échec de création de l'URL de lecture : ${signedUrlError.message}`);
+  }
+
+  return data.signedUrl;
 }
