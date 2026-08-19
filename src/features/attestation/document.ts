@@ -126,12 +126,12 @@ export function renderAttestationHtml(
   .griffe .mention{font-weight:700;font-size:11pt;white-space:nowrap;padding-bottom:6mm;}
   /* Zone réservée aux marques : garde la même hauteur sans griffe installée,
      pour que le document imprimé laisse la place d'une signature manuscrite. */
-  .marques{position:relative;display:inline-block;width:56mm;height:34mm;}
+  .marques{position:relative;display:inline-block;width:66mm;height:36mm;}
   .marques img{position:absolute;}
   /* Le mode multiply fait disparaître le fond blanc d'un cachet scanné en
      JPEG : sans lui, un carré opaque masquerait ce qu'il recouvre. */
-  .marques .paraphe{left:0;bottom:5mm;max-height:22mm;max-width:38mm;mix-blend-mode:multiply;}
-  .marques .tampon{right:0;bottom:0;max-height:32mm;max-width:36mm;mix-blend-mode:multiply;}
+  .marques .paraphe{left:0;bottom:3mm;max-height:31mm;max-width:44mm;mix-blend-mode:multiply;}
+  .marques .tampon{right:0;bottom:0;max-height:35mm;max-width:38mm;mix-blend-mode:multiply;}
   .verif{margin-top:14px;padding-top:10px;border-top:1px solid #e3edf2;display:flex;
          gap:12px;align-items:center;font-size:8pt;color:var(--gris);}
   @page{size:A4;margin:0;}
