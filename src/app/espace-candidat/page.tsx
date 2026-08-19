@@ -7,7 +7,13 @@ import {
 } from "@/features/compte-candidat/actions";
 import { STATUS_LABELS, TYPE_LABELS } from "@/shared/constants/domain";
 import { formatTrackingCode } from "@/shared/tracking/tracking-code";
-import { LogOut, Search, MailWarning, MessageSquareText } from "lucide-react";
+import {
+  LogOut,
+  Search,
+  MailWarning,
+  MessageSquareText,
+  FileCheck2,
+} from "lucide-react";
 
 export default async function EspaceCandidatPage() {
   const session = await auth();
@@ -132,6 +138,22 @@ export default async function EspaceCandidatPage() {
                         {STATUS_LABELS[req.status]}
                       </span>
                     </div>
+
+                    {/* Le lien n'apparaît qu'une fois la référence attribuée,
+                        c'est-à-dire quand la RH a réellement délivré le
+                        document. Un dossier accepté mais non encore attesté
+                        n'affiche rien : la route le refuserait de toute façon. */}
+                    {req.attestationRef && (
+                      <a
+                        href={`/api/candidat/attestation/${req.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-success btn-sm gap-1.5 w-full sm:w-auto"
+                      >
+                        <FileCheck2 className="w-4 h-4" aria-hidden="true" />
+                        Télécharger mon attestation
+                      </a>
+                    )}
 
                     {/* Même message que sur `/suivi` et dans l'email de
                         décision : le candidat connecté ne doit pas avoir à

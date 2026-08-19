@@ -68,3 +68,34 @@ export async function ensureAttestationRef(
     "Impossible d'attribuer une référence d'attestation après 20 tentatives."
   );
 }
+
+/**
+ * Dossier d'un candidat, pour qu'il télécharge lui-même son attestation.
+ *
+ * Trois conditions cumulatives, toutes nécessaires :
+ * - le dossier appartient bien à l'adresse connectée ;
+ * - il est accepté et sa période de stage est renseignée ;
+ * - une référence a déjà été attribuée, c'est-à-dire que la RH a réellement
+ *   délivré le document. Sans cette dernière, un candidat accepté pourrait
+ *   s'auto-délivrer une attestation avant que l'entreprise ne l'ait établie.
+ *
+ * Cette lecture n'attribue jamais de référence, contrairement au parcours RH.
+ */
+export async function getCandidateAttestation(
+  requestId: string,
+  candidateEmail: string
+) {
+  return prisma.internshipRequest.findFirst({
+    where: {
+      id: requestId,
+      status: "ACCEPTED",
+      endDate: { not: null },
+      attestationRef: { not: null },
+      profile: { email: candidateEmail },
+    },
+    include: {
+      profile: true,
+      tutor: { select: { name: true, email: true } },
+    },
+  });
+}
