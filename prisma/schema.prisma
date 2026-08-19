@@ -96,6 +96,18 @@ model InternshipRequest {
   /// côté candidat, donc on le conserve pour que la RH sache ce qui a été envoyé.
   decisionComment String?
 
+  /// Date de fin effective du stage, saisie par la RH au moment de délivrer
+  /// l'attestation. `startDate` et `duration` restent ce que le candidat a
+  /// *demandé* : on ne peut pas en déduire la période réellement effectuée,
+  /// d'où ce champ distinct porté par l'attestation.
+  endDate DateTime?
+
+  /// Référence de l'attestation, figée à la première délivrance. Un document
+  /// officiel ne doit pas changer de numéro s'il est réimprimé, donc elle est
+  /// stockée plutôt que recalculée à chaque rendu.
+  attestationRef      String?   @unique
+  attestationIssuedAt DateTime?
+
   profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
   profileId  String     @unique
   documents  Document[]

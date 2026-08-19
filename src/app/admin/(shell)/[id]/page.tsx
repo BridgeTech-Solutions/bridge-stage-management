@@ -9,6 +9,8 @@ import { EvaluationForm } from "@/features/demandes-admin/components/EvaluationF
 import { StatusActionBar } from "@/features/demandes-admin/components/StatusActionBar";
 import { TutorAssignForm } from "@/features/demandes-admin/components/TutorAssignForm";
 import { DocumentViewer } from "@/features/demandes-admin/components/DocumentViewer";
+import { AttestationPanel } from "@/features/attestation/components/AttestationPanel";
+import { toDateInputValue } from "@/features/attestation/schema";
 import { StatusBadge } from "@/shared/ui/StatusBadge";
 import Link from "next/link";
 import {
@@ -288,6 +290,18 @@ export default async function DetailAdminPage({ params }: DetailAdminPageProps) 
                 authorLabel={
                   evaluation?.author?.name || evaluation?.author?.email || null
                 }
+              />
+              <AttestationPanel
+                requestId={candidature.id}
+                isAccepted={status === "ACCEPTED"}
+                startDate={toDateInputValue(candidature.startDate)}
+                endDate={
+                  candidature.endDate
+                    ? toDateInputValue(candidature.endDate)
+                    : null
+                }
+                reference={candidature.attestationRef}
+                issuedAt={candidature.attestationIssuedAt}
               />
             </>
           ) : (
