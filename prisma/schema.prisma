@@ -120,6 +120,24 @@ model InternshipRequest {
   offerId String?
 }
 
+/// Griffe de signature et cachet apposés sur les attestations délivrées.
+///
+/// Table à ligne unique (`id = "singleton"`) : ces images engagent l'entreprise
+/// entière, il n'y en a pas une par utilisateur. Seules les *références* de
+/// stockage Supabase sont ici — les images vivent dans le bucket privé, jamais
+/// dans le dépôt.
+model AttestationSettings {
+  id String @id @default("singleton")
+
+  signaturePath String?
+  stampPath     String?
+
+  /// Qui a installé la griffe, et quand. Un email plutôt qu'une relation : la
+  /// trace doit survivre à la suppression du compte qui a fait la manipulation.
+  updatedByEmail String?
+  updatedAt      DateTime @updatedAt
+}
+
 model Profile {
   id        String @id @default(cuid())
   firstName String

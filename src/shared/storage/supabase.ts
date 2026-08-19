@@ -83,6 +83,52 @@ export async function uploadDocument(
   return { storagePath, signedUrl };
 }
 
+/**
+ * Téléverse une image de griffe (signature, cachet) en écrasant la précédente.
+ *
+ * `upsert` est volontaire, à l'inverse des pièces jointes candidat : il n'y a
+ * qu'une griffe courante, remplacer doit vraiment remplacer.
+ */
+export async function uploadImage(
+  file: File,
+  storagePath: string
+): Promise<string> {
+  const { error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(storagePath, file, { contentType: file.type, upsert: true });
+
+  if (error) throw new Error(`Échec de l'upload : ${error.message}`);
+
+  return storagePath;
+}
+
+/**
+ * Lit un fichier du bucket et le renvoie en `data:` URI.
+ *
+ * L'attestation est imprimée, parfois longtemps après son ouverture : une URL
+ * signée aurait expiré entre-temps et laissé un cadre vide à la place du cachet.
+ * Inliner l'image rend le document autonome.
+ */
+export async function downloadAsDataUri(
+  storagePath: string
+): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .download(storagePath);
+
+  if (error || !data) {
+    console.error(
+      `[supabase] Échec de lecture de ${storagePath}:`,
+      error?.message
+    );
+    return null;
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer());
+  const mime = data.type || "image/png";
+  return `data:${mime};base64,${buffer.toString("base64")}`;
+}
+
 export async function moveDocument(
   fromPath: string,
   toFolderPath: string

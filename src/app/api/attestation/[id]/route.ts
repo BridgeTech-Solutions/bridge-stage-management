@@ -5,6 +5,7 @@ import {
   ensureAttestationRef,
   getAttestationRequest,
 } from "@/features/attestation/queries";
+import { loadAttestationBranding } from "@/features/attestation/settings";
 
 /**
  * Délivre l'attestation de stage d'un dossier accepté.
@@ -51,11 +52,15 @@ export async function GET(
     }
 
     const issuedAt = internship.attestationIssuedAt ?? new Date();
-    const reference = await ensureAttestationRef(id, issuedAt);
+    const [reference, branding] = await Promise.all([
+      ensureAttestationRef(id, issuedAt),
+      loadAttestationBranding(),
+    ]);
 
     const html = renderAttestationHtml(internship, {
       reference,
       issuedAt,
+      branding,
       verificationCode: internship.trackingCode,
       autoPrint: request.nextUrl.searchParams.get("print") === "1",
     });

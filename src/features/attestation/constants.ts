@@ -1,18 +1,19 @@
 /**
  * Mentions fixes de l'attestation.
- *
- * Le signataire et la ville d'émission changent avec l'organisation, pas avec le
- * code : ils sont configurables par variable d'environnement, avec un repli sur
- * les valeurs actuelles de Bridge Technologies Solutions.
  */
 
+/** Ville d'émission, reprise du modèle papier de la DRH. */
 export const ATTESTATION_CITY = process.env.ATTESTATION_CITY || "Douala";
 
-export const ATTESTATION_SIGNATORY_NAME =
-  process.env.ATTESTATION_SIGNATORY_NAME || "La Direction";
-
-export const ATTESTATION_SIGNATORY_ROLE =
-  process.env.ATTESTATION_SIGNATORY_ROLE || "Le Directeur Général";
+/**
+ * Mention portée au-dessus de la signature.
+ *
+ * Volontairement impersonnelle : les attestations Bridge sont signées « La
+ * Direction. », sans nom ni fonction nominative. Nommer un signataire obligerait
+ * à corriger le gabarit à chaque changement de direction, et ferait porter à une
+ * personne un document que signe l'entreprise.
+ */
+export const ATTESTATION_SIGNATORY_MENTION = "La Direction.";
 
 /** Raison sociale telle qu'elle doit apparaître dans le corps du document. */
 export const COMPANY_LEGAL_NAME = "BRIDGE TECHNOLOGIES SOLUTIONS Sarl";
@@ -23,3 +24,7 @@ export const ATTESTATION_REF_PREFIX = "BTS/DRH";
 /** Chemins publics du papier à en-tête (extraits du modèle Word de la DRH). */
 export const LETTERHEAD_TOP = "/attestation/entete-bridge.png";
 export const LETTERHEAD_BOTTOM = "/attestation/pied-bridge.png";
+
+/** Emplacements des griffes dans le bucket privé Supabase. */
+export const SIGNATURE_STORAGE_PATH = "attestation/signature";
+export const STAMP_STORAGE_PATH = "attestation/cachet";

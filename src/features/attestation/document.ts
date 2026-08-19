@@ -3,12 +3,12 @@ import "server-only";
 import { TYPE_LABELS } from "@/shared/constants/domain";
 import {
   ATTESTATION_CITY,
-  ATTESTATION_SIGNATORY_NAME,
-  ATTESTATION_SIGNATORY_ROLE,
+  ATTESTATION_SIGNATORY_MENTION,
   COMPANY_LEGAL_NAME,
   LETTERHEAD_BOTTOM,
   LETTERHEAD_TOP,
 } from "./constants";
+import type { AttestationBranding } from "./settings";
 import type { AttestationRequest } from "./queries";
 
 /**
@@ -55,6 +55,11 @@ export type AttestationRenderOptions = {
   verificationCode: string;
   reference: string;
   issuedAt: Date;
+  /**
+   * Griffe et cachet de l'entreprise. Absents, le document laisse la place
+   * libre : il est alors signé à la main, comme le modèle papier actuel.
+   */
+  branding?: AttestationBranding;
 };
 
 export function renderAttestationHtml(
@@ -74,6 +79,19 @@ export function renderAttestationHtml(
   const encadrement = tutorLabel
     ? `, sous l'encadrement de <strong>${esc(tutorLabel)}</strong>`
     : "";
+
+  // Les griffes sont des `data:` URI produites côté serveur, jamais une saisie
+  // utilisateur : elles ne passent pas par `esc`, qui casserait le base64.
+  const { signatureDataUri, stampDataUri } = options.branding ?? {
+    signatureDataUri: null,
+    stampDataUri: null,
+  };
+  const marques = [
+    signatureDataUri
+      ? `<img class="paraphe" src="${signatureDataUri}" alt="Signature">`
+      : "",
+    stampDataUri ? `<img class="tampon" src="${stampDataUri}" alt="Cachet">` : "",
+  ].join("");
 
   return `<!doctype html>
 <html lang="fr">
@@ -102,14 +120,18 @@ export function renderAttestationHtml(
            padding:14px 18px;margin:18px 0;}
   p.nom{font-size:16pt;font-weight:700;color:var(--bleu-fonce);margin:0;text-align:left;}
   p.cursus{margin:6px 0 0;font-size:9.5pt;color:#4a5b64;text-align:left;}
-  .signature{margin-top:22px;display:flex;justify-content:flex-end;
-             align-items:flex-start;gap:12mm;}
-  .cachet{width:32mm;height:32mm;flex-shrink:0;margin-top:4mm;border:2px dashed #b9c6cd;
-          border-radius:50%;display:grid;place-items:center;color:#a6b6bf;font-size:8px;
-          text-align:center;line-height:1.3;letter-spacing:.04em;}
-  .signataire{width:72mm;text-align:center;}
-  .signataire .fonction{font-weight:700;color:var(--bleu-fonce);margin-bottom:16mm;}
-  .signataire .trait{border-top:1px solid #444;padding-top:5px;font-size:10.5pt;}
+  .signature{margin-top:26px;text-align:right;}
+  .signature .lieu-date{margin:0;text-align:right;}
+  .griffe{display:inline-flex;align-items:flex-end;gap:3mm;margin-top:10px;}
+  .griffe .mention{font-weight:700;font-size:11pt;white-space:nowrap;padding-bottom:6mm;}
+  /* Zone réservée aux marques : garde la même hauteur sans griffe installée,
+     pour que le document imprimé laisse la place d'une signature manuscrite. */
+  .marques{position:relative;display:inline-block;width:56mm;height:34mm;}
+  .marques img{position:absolute;}
+  /* Le mode multiply fait disparaître le fond blanc d'un cachet scanné en
+     JPEG : sans lui, un carré opaque masquerait ce qu'il recouvre. */
+  .marques .paraphe{left:0;bottom:5mm;max-height:22mm;max-width:38mm;mix-blend-mode:multiply;}
+  .marques .tampon{right:0;bottom:0;max-height:32mm;max-width:36mm;mix-blend-mode:multiply;}
   .verif{margin-top:14px;padding-top:10px;border-top:1px solid #e3edf2;display:flex;
          gap:12px;align-items:center;font-size:8pt;color:var(--gris);}
   @page{size:A4;margin:0;}
@@ -122,7 +144,7 @@ export function renderAttestationHtml(
   <div class="corps">
     <div class="kicker">Bridge Technologies Solutions</div>
     <h1>Attestation de stage</h1>
-    <p class="reference">Réf. ${esc(options.reference)} · ${esc(ATTESTATION_CITY)}, le ${frDate(options.issuedAt)}</p>
+    <p class="reference">Réf. ${esc(options.reference)}</p>
 
     <p>La société <strong>${COMPANY_LEGAL_NAME}</strong> atteste que :</p>
 
@@ -140,10 +162,10 @@ export function renderAttestationHtml(
       valoir ce que de droit.</p>
 
     <div class="signature">
-      <div class="cachet">CACHET<br>DE L'ENTREPRISE</div>
-      <div class="signataire">
-        <div class="fonction">${esc(ATTESTATION_SIGNATORY_ROLE)}</div>
-        <div class="trait">${esc(ATTESTATION_SIGNATORY_NAME)}</div>
+      <p class="lieu-date">${esc(ATTESTATION_CITY)}, le ${frDate(options.issuedAt)}</p>
+      <div class="griffe">
+        <span class="mention">${esc(ATTESTATION_SIGNATORY_MENTION)}</span>
+        <span class="marques">${marques}</span>
       </div>
     </div>
 

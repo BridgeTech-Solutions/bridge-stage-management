@@ -8,6 +8,16 @@ export const MAX_FILE_SIZE = 2 * 1024 * 1024;
 /** Seul format de document accepté. */
 export const ACCEPTED_MIME = "application/pdf";
 
+/**
+ * Griffes apposées sur l'attestation (signature, cachet).
+ * Le PNG à fond transparent est le format attendu : posé sur le document, un
+ * JPEG opaque masquerait le texte qu'il recouvre.
+ */
+export const ACCEPTED_IMAGE_MIMES = ["image/png", "image/jpeg", "image/webp"];
+
+/** Taille maximale d'une griffe : 1 Mo (elle est inlinée dans le document). */
+export const MAX_IMAGE_SIZE = 1024 * 1024;
+
 /** Libellés FR des statuts (pour l'affichage candidat et back-office). */
 export const STATUS_LABELS: Record<RequestStatus, string> = {
   PENDING: "En attente",

@@ -64,6 +64,17 @@ export async function requireManager(): Promise<SessionUser> {
   return requireRole(MANAGER_ROLES);
 }
 
+/**
+ * Administrateur uniquement.
+ *
+ * Réservé aux réglages qui engagent l'entreprise au-delà d'un dossier — la
+ * griffe de signature et le cachet, par exemple : installer une griffe permet
+ * d'apposer la signature de la direction sur tout document délivré ensuite.
+ */
+export async function requireAdmin(): Promise<SessionUser> {
+  return requireRole(["ADMIN"]);
+}
+
 /** Session candidat authentifiée. */
 export async function requireCandidate(): Promise<SessionUser> {
   return requireRole(["CANDIDATE"]);
